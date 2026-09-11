@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.kylehawke-stack/locationlists",
+  "title": "LocationLists",
+  "description": "Search, preview and buy CSV datasets of US business locations: dealer networks, contractors, chains.",
+  "websiteUrl": "https://locationlists.com",
+  "repository": {
+    "url": "https://github.com/kylehawke-stack/locationlists-mcp",
+    "source": "github"
+  },
+  "version": "1.1.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://locationlists.com/mcp"
+    }
+  ]
+}
