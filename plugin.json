@@ -1,0 +1,24 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "locationlists",
+  "version": "1.2.0",
+  "description": "Business location data for AI agents: search, sample, count and buy US business location lists. Pay by card or per row in USDC via x402.",
+  "author": {
+    "name": "LocationLists",
+    "email": "kyle@locationlists.com",
+    "url": "https://locationlists.com"
+  },
+  "homepage": "https://locationlists.com",
+  "repository": "https://github.com/kylehawke-stack/locationlists-mcp",
+  "keywords": [
+    "business-data",
+    "location-data",
+    "store-locations",
+    "dealer-locations",
+    "datasets",
+    "x402",
+    "usdc",
+    "agent-payments",
+    "mcp"
+  ]
+}
