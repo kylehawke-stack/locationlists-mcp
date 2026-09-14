@@ -1,47 +1,72 @@
 # LocationLists MCP server
 
-Ready-to-use CSV datasets of US business locations — dealer networks, licensed contractors, retail and restaurant chains — search, preview real rows, and buy in chat.
+[![LocationLists MCP server](https://glama.ai/mcp/connectors/io.github.kylehawke-stack/locationlists/badges/score.svg)](https://glama.ai/mcp/connectors/io.github.kylehawke-stack/locationlists)
 
-This repository holds the registry listing (`server.json`) and client setup notes for the hosted [LocationLists](https://locationlists.com) MCP server. The server itself runs at locationlists.com; there is nothing to install or run locally.
+Ready-to-use CSV datasets of US business locations (dealer networks, licensed contractors, retail and restaurant chains, healthcare providers, nonprofits). Search the catalog, preview real rows, count matches, pull filtered rows, or buy the whole file, all from chat. Agents with a wallet can pay in USDC on Base over x402, with no account.
+
+This repository holds the registry listing (`server.json`) and client setup notes for the hosted [LocationLists](https://locationlists.com) MCP server. The server runs at locationlists.com; there is nothing to install or run locally.
 
 | | |
 |---|---|
 | Endpoint | `https://locationlists.com/mcp` |
 | Transport | Streamable HTTP, stateless, JSON responses |
 | Auth | None |
+| Payments | Stripe Checkout (people) or x402, USDC on Base (agents) |
 | Registry name | `io.github.kylehawke-stack/locationlists` |
-| Read-only profile | `https://locationlists.com/mcp/chatgpt` (search, dataset, sample only — no prices or checkout) |
+| Read-only profile | `https://locationlists.com/mcp/chatgpt` (search, dataset, sample, count only; no checkout) |
 
 ## What is in the catalog
 
-Figures are read from the live [`catalog.json`](https://locationlists.com/catalog.json) (generated 2026-09-11):
+Figures are read from the live [`catalog.json`](https://locationlists.com/catalog.json) (generated 2026-09-14):
 
-- 725 datasets plus 1 bundle, 14,248,853 US business locations in total
-- Categories: Healthcare, Retail, Industrial, Nonprofits, Equipment, Furniture, Breakfast, Hardware, Grills, Mattresses, Outdoor Furniture
-- Each dataset is compiled from the official locator, association directory or state license register that publishes it
-- Prices are one-time, $9–$199 per dataset by record count; delivery is an emailed download link after Stripe payment
+- 944 datasets plus 1 bundle, 15,190,621 US business locations in total
+- Categories: Breakfast, Equipment, Financial, Furniture, Government, Grills, Hardware, Healthcare, Industrial, Mattresses, Nonprofits, Outdoor Furniture, Retail
+- Each dataset is compiled from the official locator, association directory or public register that publishes it
+- One-time prices from $9 to $1,299 per dataset, by record count
 
 ## Tools
 
-Core tools (available on `/mcp`; the first three are also on `/mcp/chatgpt`):
+All nine tools are on `/mcp`. Tools carry `readOnlyHint` / `destructiveHint` / `openWorldHint` annotations. `initialize` returns `serverInfo.name = "LocationLists"`.
+
+Free tools:
 
 | Tool | Arguments | What it does |
 |---|---|---|
-| `search_datasets` | `query?` string, `category?` enum, `limit?` int (1–50, default 15) | Find datasets by brand, product line, location type or category. Returns slug, name, record count, coverage and page URL. Read-only. |
+| `search_datasets` | `query?` string, `category?` enum, `limit?` int (≤50) | Find datasets by brand, product line, location type or category. Returns slug, name, record count, coverage and page URL. |
 | `get_dataset` | `slug` string | Full record: fields with descriptions, record and state counts, coverage, refresh cadence, the real last-modified date of the file, FAQs, sample URL and page URL. |
 | `get_sample` | `slug` string, `rows?` int (≤10) | Up to 10 real rows from the live file, spread across the dataset, as JSON plus CSV text. |
+| `count_locations` | `dataset` string, `state?`, `city?`, `county?`, `zip?`, `where?` array | How many rows match a filter on geography and any other column (e.g. `revenue_amt gt 2000000`), and what fetching them would cost. |
 | `get_quote` | `slugs` string[] | Line-item prices and total for one or more datasets; points out a bundle if it covers several requested brands for less. |
+
+Card checkout (Stripe):
+
+| Tool | Arguments | What it does |
+|---|---|---|
 | `create_checkout` | `slug` string, `email?` string | Opens a Stripe Checkout session for one dataset and returns the payment URL and session id. Does not charge anything by itself. |
 | `check_order` | `sessionId` string | Reports whether a Checkout session is paid and, if so, returns the permanent download link. |
 
-Agent-payment tools (x402, USDC on Base) for agents that carry a wallet:
+Agent payments (x402, USDC on Base):
 
 | Tool | Arguments | What it does |
 |---|---|---|
-| `query_locations` | `dataset` string, `state?`, `city?`, `county?`, `zip?`, `limit?` int (≤100) | Rows from one dataset filtered on exact column values, priced per row and settled only after the rows are produced. Call without a payment header first to get a quote. Datasets under 5,000 records are not sold by the row. |
-| `buy_dataset` | `dataset` string | Buy a whole dataset outright and get the permanent download link, at the same list price a card buyer pays. |
+| `query_locations` | `dataset` string, `state?`, `city?`, `county?`, `zip?`, `where?` array, `order_by?` object, `offset?` int, `limit?` int (≤100) | Rows from one dataset filtered on any column, sorted and paged. Priced per row and settled only after the rows are produced. Datasets under 5,000 records are not sold by the row. |
+| `buy_dataset` | `dataset` string | Buy a whole dataset outright and get a permanent download link for the CSV, at the same list price a card buyer pays. |
 
-Tools carry `readOnlyHint` / `destructiveHint` annotations. `initialize` returns `serverInfo.name = "LocationLists"`.
+## Agents can pay with x402
+
+`query_locations` and `buy_dataset` use [x402](https://www.x402.org), the HTTP 402 payment protocol. An agent that holds USDC on Base can buy data with no account, API key or checkout page:
+
+1. Call the tool without payment. The server answers with the exact price and x402 payment requirements (USDC on Base mainnet, settled through the Coinbase CDP facilitator).
+2. Sign the payment with the agent's wallet and call the tool again with the payment attached.
+3. The server returns the rows (`query_locations`) or the permanent download link (`buy_dataset`). Per-row queries settle only after the rows are produced, so a failed query costs nothing.
+
+Pricing rules the agent can rely on:
+
+- `count_locations` is free and reports how many rows a filter matches and what they would cost, before any payment.
+- Per-row prices are set per dataset at roughly twice the list price spread over its record count, so a small slice of a large file costs cents. You pay for the `limit` you request.
+- Past a few hundred rows, `buy_dataset` is cheaper than assembling the file row by row, and it is complete.
+
+Clients without a wallet can use `get_quote` → `create_checkout` → `check_order` and pay by card instead.
 
 ## Client setup
 
@@ -51,11 +76,23 @@ Tools carry `readOnlyHint` / `destructiveHint` annotations. `initialize` returns
 claude mcp add --transport http locationlists https://locationlists.com/mcp
 ```
 
-### Cursor / VS Code (`mcp.json`)
+### Cursor (`~/.cursor/mcp.json`)
 
 ```json
 {
   "mcpServers": {
+    "locationlists": {
+      "url": "https://locationlists.com/mcp"
+    }
+  }
+}
+```
+
+### VS Code (`.vscode/mcp.json`)
+
+```json
+{
+  "servers": {
     "locationlists": {
       "type": "http",
       "url": "https://locationlists.com/mcp"
@@ -63,8 +100,6 @@ claude mcp add --transport http locationlists https://locationlists.com/mcp
   }
 }
 ```
-
-VS Code uses the key `servers` instead of `mcpServers` in `.vscode/mcp.json`; the entry is otherwise the same.
 
 ### Claude.ai and ChatGPT
 
@@ -80,7 +115,7 @@ curl -s https://locationlists.com/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search_datasets","arguments":{"query":"bobcat"}}}'
 ```
 
-A quick path through the tools: `search_datasets {query:"bobcat"}` → `get_sample {slug:"bobcat-dealers"}` → `get_quote {slugs:["bobcat-dealers"]}` → `create_checkout {slug:"bobcat-dealers"}` → `check_order {sessionId}`.
+A quick path through the tools: `search_datasets {query:"bobcat"}` → `get_sample {slug:"bobcat-dealers"}` → `count_locations {dataset:"bobcat-dealers", state:"TX"}` → `get_quote {slugs:["bobcat-dealers"]}` → `create_checkout {slug:"bobcat-dealers"}` → `check_order {sessionId}`.
 
 ## Plain HTTP endpoints (no MCP client needed)
 
@@ -100,8 +135,9 @@ Example: [bobcat-dealers/dataset.json](https://locationlists.com/data/bobcat-dea
 - Site: <https://locationlists.com>
 - Privacy policy: <https://locationlists.com/privacy>
 - Data license and terms: <https://locationlists.com/license>
+- Glama: <https://glama.ai/mcp/connectors/io.github.kylehawke-stack/locationlists>
 - Contact: kyle@locationlists.com
 
 ## License
 
-The files in this repository (README, `server.json`) are MIT licensed — see [LICENSE](LICENSE). The datasets sold through the server are not covered by that license; they are governed by <https://locationlists.com/license>.
+The files in this repository (README, `server.json`) are MIT licensed; see [LICENSE](LICENSE). The datasets sold through the server are not covered by that license; they are governed by <https://locationlists.com/license>.
