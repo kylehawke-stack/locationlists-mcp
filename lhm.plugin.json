@@ -6,7 +6,7 @@
   "authorUrl": "https://github.com/kylehawke-stack",
   "homepage": "https://locationlists.com",
   "cloudEndpoint": "https://locationlists.com/mcp",
-  "icon": "https://locationlists.com/apple-icon.png",
+  "icon": "https://raw.githubusercontent.com/kylehawke-stack/locationlists-mcp/main/logo.png",
   "description": "Business location data for AI agents. Search, sample, count and buy ready-to-use lists of US business locations: 960 datasets compiled from each brand's official store locator or the public register that publishes the data.\n\nFilter by city, state, zip, a radius around any place, or any column in the file. Buy a full CSV by card, or let an agent pay per row or buy the whole file in USDC on Base via x402, with no account or API key. A failed or empty query costs nothing.",
   "tags": [
     "business-locations",
