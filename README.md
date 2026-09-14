@@ -2,7 +2,11 @@
 
 [![LocationLists MCP server](https://glama.ai/mcp/connectors/io.github.kylehawke-stack/locationlists/badges/score.svg)](https://glama.ai/mcp/connectors/io.github.kylehawke-stack/locationlists)
 
-Ready-to-use CSV datasets of US business locations (dealer networks, licensed contractors, retail and restaurant chains, healthcare providers, nonprofits). Search the catalog, preview real rows, count matches, pull filtered rows, or buy the whole file, all from chat. Agents with a wallet can pay in USDC on Base over x402, with no account.
+Listed on [Smithery](https://smithery.ai/servers/kylehawke/LocationLists) · [Glama](https://glama.ai/mcp/connectors/io.github.kylehawke-stack/locationlists) · [Official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=locationlists) · [x402scan](https://www.x402scan.com/server/f7b05cea-646f-4adc-b5aa-299aba75bbf6)
+
+Business location data for AI agents. Search, sample, count and buy ready-to-use lists of US business locations: 960 datasets compiled from each brand's official store locator or the public register that publishes the data.
+
+Filter by city, state, zip, a radius around any place, or any column in the file. Buy a full CSV by card, or let an agent pay per row or buy the whole file in USDC on Base via x402, with no account or API key. A failed or empty query costs nothing.
 
 This repository holds the registry listing (`server.json`) and client setup notes for the hosted [LocationLists](https://locationlists.com) MCP server. The server runs at locationlists.com; there is nothing to install or run locally.
 
