@@ -1,0 +1,458 @@
+{
+  "identifier": "kylehawke-stack-locationlists-mcp",
+  "name": "LocationLists",
+  "version": "1.2.0",
+  "author": "LocationLists",
+  "authorUrl": "https://github.com/kylehawke-stack",
+  "homepage": "https://locationlists.com",
+  "cloudEndpoint": "https://locationlists.com/mcp",
+  "icon": "https://locationlists.com/apple-icon.png",
+  "description": "Business location data for AI agents. Search, sample, count and buy ready-to-use lists of US business locations: 960 datasets compiled from each brand's official store locator or the public register that publishes the data.\n\nFilter by city, state, zip, a radius around any place, or any column in the file. Buy a full CSV by card, or let an agent pay per row or buy the whole file in USDC on Base via x402, with no account or API key. A failed or empty query costs nothing.",
+  "tags": [
+    "business-locations",
+    "store-locations",
+    "dealer-locations",
+    "nonprofit-data",
+    "b2b-leads",
+    "x402"
+  ],
+  "tools": [
+    {
+      "name": "search_datasets",
+      "description": "Find LocationLists datasets by brand name, product line, location type or category (e.g. 'bobcat', 'generator dealers', 'hardware stores', 'breakfast restaurants'). Returns slug, name, record count, coverage and page URL. Use the slug with the other tools.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Free-text search: brand, product, or location type"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "Equipment",
+              "Retail",
+              "Hardware",
+              "Grills",
+              "Industrial",
+              "Breakfast",
+              "Outdoor Furniture",
+              "Furniture",
+              "Mattresses",
+              "Nonprofits",
+              "Healthcare",
+              "Financial",
+              "Government",
+              "Other Transactions"
+            ],
+            "description": "Restrict to one catalog category"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Max results (default 15)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_dataset",
+      "description": "Full record for one dataset: fields with descriptions, record and state counts, coverage, advertised refresh cadence AND the real last-modified date of the file, FAQs, sample URL and the dataset's page on locationlists.com.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Dataset slug from search_datasets, e.g. bobcat-dealers"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "count_locations",
+      "description": "Free. How many rows of one dataset match a filter \u2014 on geography AND any other column (e.g. nonprofits with revenue_amt gt 2000000, dealers with dealerClass eq 'Elite'). Also reports how many rows were excluded only because a tested column was blank, so a thin column is not mistaken for a small answer. Returns the exact cost of fetching the matches with query_locations versus buying the whole file. Use get_dataset first for the column names. Scans the live file, so it can take several seconds on large datasets.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dataset": {
+            "type": "string",
+            "description": "Dataset slug, e.g. nonprofits-va"
+          },
+          "state": {
+            "type": "string",
+            "description": "Shortcut for where state eq <value>. Two-letter code."
+          },
+          "city": {
+            "type": "string",
+            "description": "Shortcut for where city eq <value>"
+          },
+          "county": {
+            "type": "string",
+            "description": "Shortcut for where county eq <value>"
+          },
+          "zip": {
+            "type": "string",
+            "description": "Shortcut for where zip eq <value>"
+          },
+          "where": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "description": "Column name as listed by get_dataset (columns[].name), e.g. revenue_amt"
+                },
+                "op": {
+                  "type": "string",
+                  "enum": [
+                    "eq",
+                    "ne",
+                    "gt",
+                    "gte",
+                    "lt",
+                    "lte",
+                    "in",
+                    "contains",
+                    "starts_with",
+                    "is_blank",
+                    "not_blank"
+                  ],
+                  "description": "eq/ne: case-insensitive match (numeric when both sides are numbers). gt/gte/lt/lte: numeric when value is a number, else text order (works for ISO dates). in: value is an array. contains/starts_with: case-insensitive text. is_blank/not_blank: no value."
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "string",
+                          "number"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "field",
+                "op"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 12,
+            "description": "Conditions on any column, all of which must hold. Blank cells never satisfy a comparison; the response counts rows excluded only because a tested column was blank."
+          },
+          "near": {
+            "type": "object",
+            "properties": {
+              "place": {
+                "type": "string",
+                "description": "City or town with state, e.g. \"Topeka, KS\""
+              },
+              "zip": {
+                "type": "string",
+                "description": "5-digit zip, e.g. \"66603\""
+              },
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              },
+              "radius_miles": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 500,
+                "description": "Only rows within this straight-line distance"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Distance search: give ONE of place, zip, or lat+lng. Rows come back nearest first with a distance_miles column; combine with limit for 'the 10 closest', or radius_miles for 'everything within 25 miles'. Straight-line miles, not drive time. Rows without coordinates are excluded and counted."
+          }
+        },
+        "required": [
+          "dataset"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_sample",
+      "description": "Up to 10 real rows from the live file (spread across the dataset, not the first ten), as JSON plus CSV text. Show these to the user so they can judge the fields and quality.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Dataset slug"
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "Rows to return (default 10)"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_quote",
+      "description": "Line-item prices and total for a list of dataset slugs. If a bundle covers several requested brands for less, it says so.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slugs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "Dataset slugs"
+          }
+        },
+        "required": [
+          "slugs"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "create_checkout",
+      "description": "Opens a Stripe Checkout session for one dataset and returns the payment URL plus the session id. Give the URL to the user to pay (card, Apple Pay, Google Pay). After payment Stripe emails them a permanent download link; use check_order with the session id to confirm and fetch it. Does not charge anything by itself.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Dataset slug"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Buyer email, if known \u2014 prefills Checkout and is where the download link is sent"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "check_order",
+      "description": "Given a Stripe Checkout session id (cs_\u2026), reports whether it is paid and, if so, returns the permanent download link for the CSV.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "pattern": "^cs_",
+            "description": "Checkout session id from create_checkout"
+          }
+        },
+        "required": [
+          "sessionId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "query_locations",
+      "description": "Return matching rows from one dataset, filtered on ANY of its columns \u2014 state/city/county/zip shortcuts plus `where` conditions with numeric comparisons (e.g. [{field:\"revenue_amt\",op:\"gt\",value:2000000}]), sorted with `order_by` and paged with `offset`. `near` ({place:\"Topeka, KS\"}, a zip, or lat+lng, optional radius_miles) returns the closest rows first with distance_miles \u2014 so \"10 banks closest to Topeka\" is one call for 10 rows. get_dataset lists the columns; count_locations (free) tells you how many rows match and what fetching them costs before you pay. Priced per row in USDC via x402 and settled only after the rows are produced, so a failed call costs nothing. The rate is derived from the dataset: roughly 2x its list price spread over its record count, so a small slice of a big file is cents. You pay for the limit you request, up to 100 rows. Call it without payment first: the result is an x402 PaymentRequired quote with the exact amount, and nothing is charged until you retry with payment. Datasets under 5,000 records are not sold by the row \u2014 buy those files outright.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dataset": {
+            "type": "string",
+            "description": "Dataset slug, e.g. nonprofits-va"
+          },
+          "state": {
+            "type": "string",
+            "description": "Shortcut for where state eq <value>. Two-letter code."
+          },
+          "city": {
+            "type": "string",
+            "description": "Shortcut for where city eq <value>"
+          },
+          "county": {
+            "type": "string",
+            "description": "Shortcut for where county eq <value>"
+          },
+          "zip": {
+            "type": "string",
+            "description": "Shortcut for where zip eq <value>"
+          },
+          "where": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "description": "Column name as listed by get_dataset (columns[].name), e.g. revenue_amt"
+                },
+                "op": {
+                  "type": "string",
+                  "enum": [
+                    "eq",
+                    "ne",
+                    "gt",
+                    "gte",
+                    "lt",
+                    "lte",
+                    "in",
+                    "contains",
+                    "starts_with",
+                    "is_blank",
+                    "not_blank"
+                  ],
+                  "description": "eq/ne: case-insensitive match (numeric when both sides are numbers). gt/gte/lt/lte: numeric when value is a number, else text order (works for ISO dates). in: value is an array. contains/starts_with: case-insensitive text. is_blank/not_blank: no value."
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "string",
+                          "number"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "field",
+                "op"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 12,
+            "description": "Conditions on any column, all of which must hold. Blank cells never satisfy a comparison; the response counts rows excluded only because a tested column was blank."
+          },
+          "near": {
+            "type": "object",
+            "properties": {
+              "place": {
+                "type": "string",
+                "description": "City or town with state, e.g. \"Topeka, KS\""
+              },
+              "zip": {
+                "type": "string",
+                "description": "5-digit zip, e.g. \"66603\""
+              },
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              },
+              "radius_miles": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 500,
+                "description": "Only rows within this straight-line distance"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Distance search: give ONE of place, zip, or lat+lng. Rows come back nearest first with a distance_miles column; combine with limit for 'the 10 closest', or radius_miles for 'everything within 25 miles'. Straight-line miles, not drive time. Rows without coordinates are excluded and counted."
+          },
+          "order_by": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string"
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "description": "Default desc"
+              }
+            },
+            "required": [
+              "field"
+            ],
+            "additionalProperties": false,
+            "description": "Return the top rows by one column, e.g. {field: 'revenue_amt'} for the largest first. Blanks sort last."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Skip this many matching rows, to page past the first call"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Rows to return and pay for (max 100)"
+          }
+        },
+        "required": [
+          "dataset"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "buy_dataset",
+      "description": "Buy an ENTIRE dataset outright and get a permanent download link for the CSV. Pays once in USDC on Base, at the same list price a human pays by card \u2014 no account and no checkout page.\\n\\nPrefer this over repeated query_locations calls whenever you want most of a file. Metered queries are priced per row and deliberately cost more than the file if you assemble it that way, so past a few hundred rows buying outright is both cheaper and complete. get_dataset (free) gives the price and record count first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dataset": {
+            "type": "string",
+            "description": "Dataset slug, e.g. generac-dealers. Use search_datasets first."
+          }
+        },
+        "required": [
+          "dataset"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ]
+}
