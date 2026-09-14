@@ -23,8 +23,8 @@ This repository holds the registry listing (`server.json`) and client setup note
 
 Figures are read from the live [`catalog.json`](https://locationlists.com/catalog.json) (generated 2026-09-14):
 
-- 944 datasets plus 1 bundle, 15,190,621 US business locations in total
-- Categories: Breakfast, Equipment, Financial, Furniture, Government, Grills, Hardware, Healthcare, Industrial, Mattresses, Nonprofits, Outdoor Furniture, Retail
+- 960 datasets plus 1 bundle, 15,190,621 US business locations in total (overlapping slices counted once)
+- Categories: Breakfast, Equipment, Financial, Furniture, Government, Grills, Hardware, Healthcare, Industrial, Mattresses, Nonprofits, Other Transactions, Outdoor Furniture, Retail
 - Each dataset is compiled from the official locator, association directory or public register that publishes it
 - One-time prices from $9 to $1,299 per dataset, by record count
 
